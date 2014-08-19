@@ -37,10 +37,7 @@ class Contract:
         self.currency = currency
         self.exchange = exchange
         # Basic contract
-        if sec_type.lower() == 'cash':
-            self.local_symbol = '%s.%s' % (self.symbol, self.currency)
-        else:
-            self.local_symbol = self.symbol
+        self.local_symbol = ''
         self.con_id = 0
         self.expiry = ''
         self.strike = 0
