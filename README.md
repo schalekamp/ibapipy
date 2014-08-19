@@ -3,9 +3,9 @@ ibapipy
 
 Interactive Brokers API (IB API) native Python port
 
-# Introduction
+## Introduction
 
-Python provides some excellent libraries for working with financial data.
+Python provides some excellent libraries for working with financial data:
 [NumPy](http://www.numpy.org), [SciPy](http://www.scipy.org),
 [matplotlib](http://matplotlib.org), and
 [scikit-learn](http://scikit-learn.org) are a few that I've found to be
@@ -20,7 +20,7 @@ Brokers for their API and closely replicates its behavior with a few minor
 exceptions. The end result is a pure Python package that (hopefully) provides
 seamless access to the full range of IB services.
 
-# Brief module/class overview
+## Brief module/class overview
 
 * *core/reader.py*. The lowest-level module in the API. In Java, an EReader
   class is used to handle the low-level socket communications. That is
@@ -42,14 +42,14 @@ seamless access to the full range of IB services.
   "the API".
 * *data/...*. Data objects such as ticks, orders, etc.
 
-# Changes from the native IB API
+## Changes from the native IB API
 
 * Contract and ContractDetails are merged into a single Contract class.
 * Order and OrderState are merged into a single Order class.
 * Tick class adds midpoint() and spread() methods.
 * Execution class adds a milliseconds attribute.
 
-# To do
+## To do
 
 Due to the size of the API and the fact that I'm not trading everything that it
 offers, I've only implemented enough to support common operations that would be
@@ -83,6 +83,6 @@ amount left to do.
 * Add support to ClientSocket.req\_historical\_data() for bag\_type.
 * Add support to ClientSocket.req\_market\_data() for bag\_type and under\_type.
 
-# See also
+## See also
 
 * [Java API Guide](http://www.interactivebrokers.com/en/software/api/apiguide/java/java.htm)
