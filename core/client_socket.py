@@ -1,6 +1,7 @@
 """Implements the EClientSocket interface for the Interactive Brokers API."""
-from ibapipy.core.network_handler import NetworkHandler
+import threading
 import ibapipy.config as config
+from ibapipy.core.network_handler import NetworkHandler
 
 
 class ClientSocket:
@@ -8,8 +9,8 @@ class ClientSocket:
 
     def __init__(self):
         """Initialize a new instance of a ClientSocket."""
-        self.network_handler = NetworkHandler()
-        self.messages = self.network_handler.message_queue
+        self.__listener_thread__ = None
+        self.__network_handler__ = NetworkHandler()
         self.server_version = 0
         self.tws_connection_time = ''
         self.is_connected = False
@@ -22,7 +23,10 @@ class ClientSocket:
 
         """
         for item in args:
-            self.network_handler.socket_out_queue.put(item, block=False)
+            self.__network_handler__.socket_out_queue.put(item, block=False)
+
+    def account_download_end(self, account_name):
+        pass
 
     def cancel_calculate_implied_volatility(self, req_id):
         raise NotImplementedError()
@@ -34,6 +38,15 @@ class ClientSocket:
     def calculate_implied_volatility(self, req_id, contract, price,
                                      under_price):
         raise NotImplementedError()
+
+    def commission_report(self, report):
+        pass
+
+    def contract_details(self, req_id, contract):
+        pass
+
+    def contract_details_end(self, req_id):
+        pass
 
     def cancel_calculate_option_price(self, req_id):
         raise NotImplementedError()
@@ -75,20 +88,56 @@ class ClientSocket:
         client_id -- number used to identify this client connection
 
         """
-        results = self.network_handler.connect(host, port, client_id)
+        if self.is_connected:
+            return
+        # Connect
+        results = self.__network_handler__.connect(host, port, client_id)
         self.server_version, self.tws_connection_time = results
         self.is_connected = True
+        # Listen for incoming messages
+        self.__listener_thread__ = threading.Thread(
+            target=listen, args=(self, self.__network_handler__.message_queue))
+        self.__listener_thread__.start()
 
     def disconnect(self):
         """Disconnect from the remote TWS."""
-        self.network_handler.disconnect()
+        self.__network_handler__.disconnect()
         self.is_connected = False
         self.server_version = 0
         self.tws_connection_time = ''
 
+    def error(self, req_id, code, message):
+        pass
+
     def exercise_options(self, req_id, contract, action, quantity, account,
                          override):
         raise NotImplementedError()
+
+    def exec_details(self, req_id, contract, execution):
+        pass
+
+    def exec_details_end(self, req_id):
+        pass
+
+    def historical_data(self, req_id, date, open, high, low, close, volume,
+                        bar_count, wap, has_gaps):
+        pass
+
+    def managed_accounts(self, accounts):
+        pass
+
+    def next_valid_id(self, req_id):
+        pass
+
+    def open_order(self, req_id, contract, order):
+        pass
+
+    def open_order_end(self):
+        pass
+
+    def order_status(self, req_id, status, filled, remaining, avg_fill_price,
+                     perm_id, parent_id, last_fill_price, client_id, why_held):
+        pass
 
     def place_order(self, req_id, contract, order):
         version = 35
@@ -304,6 +353,30 @@ class ClientSocket:
         version = 1
         self.__send__(config.SET_SERVER_LOGLEVEL, version, log_level)
 
+    def tick_price(self, req_id, tick_type, price, can_auto_execute):
+        pass
+
+    def tick_size(self, req_id, tick_type, size):
+        pass
+
+    def update_account_time(self, timestamp):
+        pass
+
+    def update_account_value(self, key, value, currency, account_name):
+        pass
+
+    def update_portfolio(self, contract, position, market_price, market_value,
+                         average_cost, unrealized_pnl, realized_pnl,
+                         account_name):
+        pass
+
+    def update_unknown(self, *args):
+        """Callback for updated known data that does not match any existing
+        callbacks.
+
+        """
+        pass
+
 
 def check(value):
     """Check to see if the specified value is equal to JAVA_INT_MAX or
@@ -347,3 +420,27 @@ def is_java_int_max(number):
 
     """
     return type(number) == int and number == config.JAVA_INT_MAX
+
+
+def listen(client, in_queue):
+    """Listen to messages in the specified incoming queue and call the
+    appropriate methods in the client.
+
+    Keyword arguments:
+    client   -- client
+    in_queue -- incoming message queue
+
+    """
+    # Loop until we receive a stop message in the incoming queue
+    while True:
+        method, parms = in_queue.get()
+        if method == 'stop':
+            return
+        elif method is None:
+            continue
+        elif hasattr(client, method):
+            getattr(client, method)(*parms)
+        else:
+            parms = list(parms)
+            parms.insert(0, method)
+            getattr(client, 'update_unknown')(*parms)

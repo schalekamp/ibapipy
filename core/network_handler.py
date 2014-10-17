@@ -40,7 +40,7 @@ class NetworkHandler:
         if server_version < config.MIN_SERVER_VERSION:
             msg = 'Server version is {0} (min {1} needed).'
             raise IBAPIPyError(msg.format(server_version,
-                                        config.MIN_SERVER_VERSION))
+                                          config.MIN_SERVER_VERSION))
         tws_connection_time = response[1]
         send(self.socket, client_id)
         # Start the outoing request listener
@@ -48,7 +48,7 @@ class NetworkHandler:
         process = Process(target=outgoing_listener,
                           args=(self.socket, self.socket_out_queue))
         process.start()
-        # Start the incoming data listener
+        # Start the incoming socket data --> incoming queue listener
         self.socket_in_queue = Queue()
         process = Process(target=incoming_listener,
                           args=(self.socket, self.socket_in_queue))
@@ -64,11 +64,12 @@ class NetworkHandler:
         """Disconnect from the remote TWS."""
         if self.socket is None:
             return
+        self.socket.shutdown(socket.SHUT_WR)
         self.socket_out_queue.put('stop')
         self.socket_in_queue.put('-1')
+        self.message_queue.put(('stop', None))
         self.socket.close()
         self.socket = None
-        self.incoming_process.terminate()
 
 
 def incoming_listener(in_socket, in_queue):
@@ -85,12 +86,12 @@ def incoming_listener(in_socket, in_queue):
                 return
             else:
                 raise IBAPIPyError('select error', ex)
-            return
         for item in inputready:
             raw_data = in_socket.recv(config.BUFFER_SIZE)
             data_buffer += raw_data
             # No more data, go ahead and shut down
             if len(raw_data) == 0:
+                in_socket.close()
                 return
             else:
                 data, remainder = decode(data_buffer)

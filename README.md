@@ -57,7 +57,6 @@ necessary in the equity and foreign exchange markets. There's still a fair
 amount left to do.
 
 * Improve inline documentation.
-* Add unit tests.
 * Implement the following methods in the ClientSocket class:
  * cancel\_calculate\_implied\_volatility()
  * calculate\_option\_price()
@@ -85,4 +84,4 @@ amount left to do.
 
 ## See also
 
-* [Java API Guide](http://www.interactivebrokers.com/en/software/api/apiguide/java/java.htm)
+* [IB Java API Guide](http://www.interactivebrokers.com/en/software/api/apiguide/java/java.htm)
